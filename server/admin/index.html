@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ToTusTuus Admin</title>
+    <link rel="stylesheet" href="/admin-static/styles.css" />
+  </head>
+  <body>
+    <main class="admin-shell">
+      <header class="admin-top">
+        <div>
+          <p class="eyebrow">ToTusTuus</p>
+          <h1>Gestión de pedidos</h1>
+        </div>
+        <button id="reloadButton" class="btn btn-secondary" type="button">
+          Recargar
+        </button>
+      </header>
+
+      <section class="admin-state">
+        <p id="notice" class="notice" hidden></p>
+        <p id="error" class="error" hidden></p>
+      </section>
+
+      <section id="loadingCard" class="panel-card">
+        <h2>Cargando pedidos</h2>
+        <p>Estamos consultando el backend.</p>
+      </section>
+
+      <section id="emptyCard" class="panel-card" hidden>
+        <h2>No hay pedidos</h2>
+        <p>Cuando alguien confirme un pedido aparecerá aquí automáticamente.</p>
+      </section>
+
+      <section id="ordersList" class="orders-list"></section>
+    </main>
+
+    <template id="orderTemplate">
+      <article class="order-card">
+        <div class="order-head">
+          <div>
+            <p class="order-kicker"></p>
+            <h2 class="order-id"></h2>
+          </div>
+          <div class="order-actions">
+            <select class="order-status">
+              <option>Pendiente</option>
+              <option>Preparando</option>
+              <option>Enviado</option>
+              <option>Entregado</option>
+              <option>Cancelado</option>
+            </select>
+            <button class="btn btn-primary resend-button" type="button">
+              Reenviar emails
+            </button>
+            <button class="btn btn-secondary delete-button" type="button">
+              Eliminar
+            </button>
+          </div>
+        </div>
+
+        <div class="order-grid">
+          <div class="order-block">
+            <h3>Cliente</h3>
+            <p class="customer-name"></p>
+            <p class="customer-email"></p>
+            <p class="customer-phone"></p>
+          </div>
+
+          <div class="order-block">
+            <h3>Envío</h3>
+            <p class="shipping-address"></p>
+            <p class="shipping-city"></p>
+            <p class="shipping-postal"></p>
+          </div>
+
+          <div class="order-block">
+            <h3>Resumen</h3>
+            <p class="order-state"></p>
+            <p class="order-total"></p>
+            <p class="order-notes"></p>
+          </div>
+        </div>
+
+        <div class="products-block">
+          <h3>Productos</h3>
+          <div class="products-list"></div>
+        </div>
+      </article>
+    </template>
+
+    <script type="module" src="/admin-static/app.js"></script>
+  </body>
+  </html>

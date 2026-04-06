@@ -6,11 +6,11 @@ import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import crypto from "crypto";
+import { allowedSizes, productCatalogById } from "../shared/productCatalog.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const rootDir = path.resolve(__dirname, "..");
-const distDir = path.join(rootDir, "dist");
+const adminDir = path.join(__dirname, "admin");
 const dataDir = path.join(__dirname, "data");
 const ordersFile = path.join(dataDir, "orders.json");
 
@@ -191,8 +191,37 @@ app.post("/api/orders", async (req, res) => {
     return res.status(400).json({ message: "Datos de pedido incompletos" });
   }
 
-  const total = form.items.reduce(
-    (sum, item) => sum + Number(item.product.price) * Number(item.qty),
+  const normalizedItems = [];
+
+  for (const item of form.items) {
+    const productId = Number(item.productId);
+    const qty = Number(item.qty);
+    const size = String(item.size || "").trim();
+    const product = productCatalogById.get(productId);
+
+    if (!product) {
+      return res.status(400).json({ message: "Producto no v?lido" });
+    }
+
+    if (!allowedSizes.includes(size)) {
+      return res.status(400).json({ message: "Talla no v?lida" });
+    }
+
+    if (!Number.isInteger(qty) || qty <= 0) {
+      return res.status(400).json({ message: "Cantidad no v?lida" });
+    }
+
+    normalizedItems.push({
+      productId: product.id,
+      nombre: product.name,
+      talla: size,
+      cantidad: qty,
+      precio: product.price,
+    });
+  }
+
+  const total = normalizedItems.reduce(
+    (sum, item) => sum + Number(item.precio) * Number(item.cantidad),
     0,
   );
 
@@ -209,12 +238,7 @@ app.post("/api/orders", async (req, res) => {
       ciudad: form.city,
       cp: form.postalCode,
     },
-    productos: form.items.map((item) => ({
-      nombre: item.product.name,
-      talla: item.size,
-      cantidad: item.qty,
-      precio: item.product.price,
-    })),
+    productos: normalizedItems,
     total,
     estado: "Pendiente",
     notas: form.notes || "",
@@ -235,16 +259,15 @@ app.post("/api/orders", async (req, res) => {
   }
 });
 
-if (fs.existsSync(distDir)) {
-  app.use(express.static(distDir));
-  app.get("/admin-pedidos", requireAdmin, (req, res) => {
-    res.sendFile(path.join(distDir, "index.html"));
-  });
-  app.get("/{*path}", (req, res) => {
-    if (req.path.startsWith("/api/")) {
-      return res.status(404).end();
-    }
-    res.sendFile(path.join(distDir, "index.html"));
+if (fs.existsSync(adminDir)) {
+  app.use(
+    "/admin-static",
+    requireAdmin,
+    express.static(adminDir, { index: false }),
+  );
+
+  app.get("/", requireAdmin, (req, res) => {
+    res.sendFile(path.join(adminDir, "index.html"));
   });
 }
 

@@ -128,7 +128,7 @@ const categoryOptions = ["all", "Sudadera", "Camiseta", "Polar"];
 const storageKeys = {
   cart: "ttu_react_cart",
 };
-const apiBase = "/api";
+const apiBase = import.meta.env.VITE_API_BASE || "/api";
 const aboutValues = [
   { title: "Fe viva", description: "Jesús es el centro de este proyecto." },
   {
@@ -192,29 +192,6 @@ async function createOrderRequest(payload) {
   });
 }
 
-async function fetchAdminOrders() {
-  return apiRequest("/admin/orders");
-}
-
-async function updateAdminOrderStatus(id, status) {
-  return apiRequest(`/admin/orders/${id}`, {
-    method: "PATCH",
-    body: JSON.stringify({ status }),
-  });
-}
-
-async function deleteAdminOrder(id) {
-  return apiRequest(`/admin/orders/${id}`, {
-    method: "DELETE",
-  });
-}
-
-async function resendAdminOrderEmail(id) {
-  return apiRequest(`/admin/orders/${id}/resend-email`, {
-    method: "POST",
-  });
-}
-
 function Header({ cartCount, onOpenCart }) {
   return (
     <header>
@@ -264,74 +241,6 @@ function Header({ cartCount, onOpenCart }) {
         </div>
       </div>
     </header>
-  );
-}
-
-function Footer() {
-  return (
-    <footer>
-      <div className="fi2">
-        <div className="fl">
-          <img src="/shopify-assets/LogoCompletoBlanco.png" alt="ToTusTuus" />
-        </div>
-        <div className="fg">
-          <div className="fc">
-            <h4>Tienda</h4>
-            <ul>
-              <li>
-                <Link to="/catalogo?tipo=Sudadera">Sudaderas</Link>
-              </li>
-              <li>
-                <Link to="/catalogo?tipo=Camiseta">Camisetas</Link>
-              </li>
-              <li>
-                <Link to="/catalogo?tipo=Polar">Polares</Link>
-              </li>
-            </ul>
-          </div>
-          <div className="fc">
-            <h4>Soporte</h4>
-            <ul>
-              <li>
-                <Link to="/contacto">Contacto</Link>
-              </li>
-            </ul>
-          </div>
-          <div className="fc">
-            <h4>Conócenos</h4>
-            <ul>
-              <li>
-                <Link to="/contacto">Sobre nosotros</Link>
-              </li>
-              <li>
-                <a href="#">Política de privacidad</a>
-              </li>
-            </ul>
-          </div>
-        </div>
-        <div className="fb2">
-          <p className="fcp">
-            © 2026 ToTusTuus. Todos los derechos reservados.
-          </p>
-          <div className="soc">
-            <a
-              href="https://www.instagram.com/totustuus.brand/"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Instagram
-            </a>
-            <a
-              href="https://www.tiktok.com/@totustuus_brand"
-              target="_blank"
-              rel="noreferrer"
-            >
-              TikTok
-            </a>
-          </div>
-        </div>
-      </div>
-    </footer>
   );
 }
 
@@ -624,7 +533,7 @@ function ProductPage({ onAddToCart, onQuickAdd }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const product = products.find((item) => item.id === Number(id));
-  const [selectedImage, setSelectedImage] = useState(product?.imgs[0] ?? "");
+  const [selectedImage, setSelectedImage] = useState(product?.imgs[0] || "");
   const [selectedSize, setSelectedSize] = useState("");
 
   useEffect(() => {
@@ -1031,178 +940,6 @@ function ContactPage({ onSubmit }) {
   );
 }
 
-function AdminOrdersPage() {
-  const [orders, setOrders] = useState([]);
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const loadOrders = async () => {
-      setIsLoading(true);
-      setError("");
-
-      try {
-        const nextOrders = await fetchAdminOrders();
-        setOrders(nextOrders);
-      } catch (fetchError) {
-        setError(
-          fetchError.message ||
-            "No se pudieron cargar los pedidos. El acceso lo protege el servidor.",
-        );
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadOrders();
-  }, []);
-
-  const updateStatus = async (id, status) => {
-    try {
-      const updatedOrder = await updateAdminOrderStatus(id, status);
-      setOrders((current) =>
-        current.map((order) => (order.id === id ? updatedOrder : order)),
-      );
-      setNotice(`Estado actualizado a ${status}`);
-      setError("");
-    } catch (updateError) {
-      setError(updateError.message || "No se pudo actualizar el estado");
-    }
-  };
-
-  const deleteOrder = async (id) => {
-    try {
-      await deleteAdminOrder(id);
-      setOrders((current) => current.filter((order) => order.id !== id));
-      setNotice("Pedido eliminado");
-      setError("");
-    } catch (deleteError) {
-      setError(deleteError.message || "No se pudo eliminar el pedido");
-    }
-  };
-
-  const resendEmail = async (id) => {
-    try {
-      const result = await resendAdminOrderEmail(id);
-      if (result?.sent) {
-        setNotice("Emails reenviados correctamente");
-        setError("");
-        return;
-      }
-      setError(
-        "SMTP no configurado. El pedido est? guardado, pero no se pudo enviar el correo.",
-      );
-    } catch (resendError) {
-      setError(resendError.message || "No se pudo reenviar el email");
-    }
-  };
-
-  return (
-    <>
-      <div className="pbanner">
-        <h1>Panel de pedidos</h1>
-      </div>
-      <div className="admin-wrap">
-        {!!error && <p className="admin-error">{error}</p>}
-        {!!notice && <p className="contact-note">{notice}</p>}
-
-        {isLoading && (
-          <div className="admin-empty">
-            <h2>Cargando pedidos</h2>
-            <p>Estamos consultando el panel de administraci?n.</p>
-          </div>
-        )}
-
-        {!isLoading && !orders.length && !error && (
-          <div className="admin-empty">
-            <h2>No hay pedidos guardados</h2>
-            <p>
-              Cuando alguien confirme un pedido aparecer? aqu? autom?ticamente.
-            </p>
-          </div>
-        )}
-
-        {!isLoading &&
-          orders.map((order) => (
-            <article key={order.id} className="admin-card">
-              <div className="admin-head">
-                <div>
-                  <p className="admin-kicker">{order.fecha}</p>
-                  <h2>{order.id}</h2>
-                </div>
-                <div className="admin-actions">
-                  <select
-                    value={order.estado}
-                    onChange={(event) =>
-                      updateStatus(order.id, event.target.value)
-                    }
-                  >
-                    <option>Pendiente</option>
-                    <option>Preparando</option>
-                    <option>Enviado</option>
-                    <option>Entregado</option>
-                    <option>Cancelado</option>
-                  </select>
-                  <button
-                    className="bprim"
-                    type="button"
-                    onClick={() => resendEmail(order.id)}
-                  >
-                    Reenviar emails
-                  </button>
-                  <button
-                    className="bcan"
-                    type="button"
-                    onClick={() => deleteOrder(order.id)}
-                  >
-                    Eliminar
-                  </button>
-                </div>
-              </div>
-
-              <div className="admin-grid">
-                <div className="admin-block">
-                  <h3>Cliente</h3>
-                  <p>{order.cliente.nombre}</p>
-                  <p>{order.cliente.email}</p>
-                  <p>{order.cliente.telefono || "-"}</p>
-                </div>
-
-                <div className="admin-block">
-                  <h3>Env?o</h3>
-                  <p>{order.envio.direccion}</p>
-                  <p>{order.envio.ciudad}</p>
-                  <p>{order.envio.cp}</p>
-                </div>
-
-                <div className="admin-block">
-                  <h3>Estado</h3>
-                  <p>{order.estado}</p>
-                  <p>Total: {formatPrice(Number(order.total))}</p>
-                  <p>Notas: {order.notas || "-"}</p>
-                </div>
-              </div>
-
-              <div className="admin-products">
-                <h3>Productos</h3>
-                {order.productos.map((item, index) => (
-                  <div key={`${order.id}-${index}`} className="admin-product-row">
-                    <span>{item.nombre}</span>
-                    <span>Talla: {item.talla}</span>
-                    <span>Cantidad: {item.cantidad}</span>
-                    <span>{formatPrice(Number(item.precio))}</span>
-                  </div>
-                ))}
-              </div>
-            </article>
-          ))}
-      </div>
-      <SiteFooter />
-    </>
-  );
-}
-
 function CartDrawer({
   isOpen,
   cart,
@@ -1560,7 +1297,7 @@ export default function App() {
       return false;
     }
 
-    showToast("¡Suscripcion realizada correctamente!");
+    showToast("¡Suscripci?n realizada correctamente!");
     return true;
   };
 
@@ -1584,7 +1321,11 @@ export default function App() {
     try {
       const response = await createOrderRequest({
         ...form,
-        items: cart,
+        items: cart.map((item) => ({
+          productId: item.product.id,
+          size: item.size,
+          qty: item.qty,
+        })),
       });
 
       setCart([]);
@@ -1640,7 +1381,6 @@ export default function App() {
           path="/sobre-nosotros"
           element={<AboutPage onSubscribe={submitSubscription} />}
         />
-        <Route path="/admin-pedidos" element={<AdminOrdersPage />} />
         <Route
           path="/contacto"
           element={<ContactPage onSubmit={submitContact} />}
