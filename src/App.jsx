@@ -726,8 +726,8 @@ function AboutPage({ onSubscribe }) {
               <h3>Nuestra misión</h3>
               <p>Crear ropa que hable sin necesidad de palabras.</p>
               <p>
-                Llevar esperanza, luz y fe a traves de diseños que conectan con
-                el coraz?n de esta generaci?n.
+                Llevar esperanza, luz y fe a través de diseños que conectan con
+                el corazón de esta generación.
               </p>
               <p>
                 Queremos que quienes vistan ToTusTuus se sientan parte de algo
@@ -1297,7 +1297,7 @@ export default function App() {
       return false;
     }
 
-    showToast("¡Suscripci?n realizada correctamente!");
+    showToast("¡Suscripción realizada correctamente!");
     return true;
   };
 
@@ -1314,7 +1314,7 @@ export default function App() {
     }
 
     if (!cart.length) {
-      showToast("Tu carrito est? vac?o");
+      showToast("Tu carrito está vacío");
       return false;
     }
 
@@ -1332,10 +1332,10 @@ export default function App() {
       setIsCheckoutOpen(false);
 
       if (response?.emailResult?.sent) {
-        showToast("Pedido realizado. Hemos enviado la confirmaci?n por email.");
+        showToast("Pedido realizado. Hemos enviado la confirmación por email.");
       } else {
         showToast(
-          "Pedido realizado. Lo hemos registrado, pero el email autom?tico no est? configurado todav?a.",
+          "Pedido realizado. Lo hemos registrado, pero el email automático no está configurado todavía.",
         );
       }
 

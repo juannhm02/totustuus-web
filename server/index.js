@@ -4,18 +4,21 @@ import cors from "cors";
 import nodemailer from "nodemailer";
 import path from "path";
 import fs from "fs";
+import { createServer as createHttpServer } from "http";
 import { fileURLToPath } from "url";
 import crypto from "crypto";
 import { allowedSizes, productCatalogById } from "../shared/productCatalog.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const rootDir = path.resolve(__dirname, "..");
+const distDir = path.join(rootDir, "dist");
 const adminDir = path.join(__dirname, "admin");
 const dataDir = path.join(__dirname, "data");
 const ordersFile = path.join(dataDir, "orders.json");
 
 const PORT = Number(process.env.PORT || 8787);
-const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:5173";
+const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || `http://localhost:${PORT}`;
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "pedidos@totustuus.com";
 const ADMIN_BASIC_USER = process.env.ADMIN_BASIC_USER || "admin";
 const ADMIN_BASIC_PASS = process.env.ADMIN_BASIC_PASS || "cambia-esta-clave";
@@ -25,15 +28,12 @@ const SMTP_SECURE = process.env.SMTP_SECURE === "true";
 const SMTP_USER = process.env.SMTP_USER;
 const SMTP_PASS = process.env.SMTP_PASS;
 const SMTP_FROM = process.env.SMTP_FROM || ADMIN_EMAIL;
+const isProduction = process.env.NODE_ENV === "production";
 
 fs.mkdirSync(dataDir, { recursive: true });
 if (!fs.existsSync(ordersFile)) {
   fs.writeFileSync(ordersFile, "[]", "utf8");
 }
-
-const app = express();
-app.use(cors({ origin: CLIENT_ORIGIN, credentials: false }));
-app.use(express.json());
 
 function readOrders() {
   return JSON.parse(fs.readFileSync(ordersFile, "utf8"));
@@ -60,7 +60,7 @@ function createTransporter() {
 }
 
 function formatPrice(price) {
-  return `€${Number(price).toFixed(2).replace(".", ",")} EUR`;
+  return `EUR ${Number(price).toFixed(2).replace(".", ",")}`;
 }
 
 function buildOrderText(order) {
@@ -123,7 +123,7 @@ function requireAdmin(req, res, next) {
 
   if (scheme !== "Basic" || !encoded) {
     res.setHeader("WWW-Authenticate", 'Basic realm="ToTusTuus Admin"');
-    return res.status(401).json({ message: "Autenticaci?n requerida" });
+    return res.status(401).json({ message: "Autenticación requerida" });
   }
 
   const decoded = Buffer.from(encoded, "base64").toString("utf8");
@@ -139,138 +139,215 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-app.get("/api/admin/orders", requireAdmin, (req, res) => {
-  res.json(readOrders());
-});
+async function createApp() {
+  const app = express();
+  const httpServer = createHttpServer(app);
 
-app.patch("/api/admin/orders/:id", requireAdmin, (req, res) => {
-  const { status } = req.body || {};
-  const orders = readOrders();
-  const nextOrders = orders.map((order) =>
-    order.id === req.params.id ? { ...order, estado: status } : order,
-  );
-  writeOrders(nextOrders);
-  res.json(nextOrders.find((order) => order.id === req.params.id));
-});
+  app.use(cors({ origin: CLIENT_ORIGIN, credentials: false }));
+  app.use(express.json());
 
-app.delete("/api/admin/orders/:id", requireAdmin, (req, res) => {
-  const orders = readOrders();
-  const nextOrders = orders.filter((order) => order.id !== req.params.id);
-  writeOrders(nextOrders);
-  res.status(204).end();
-});
-
-app.post("/api/admin/orders/:id/resend-email", requireAdmin, async (req, res) => {
-  const orders = readOrders();
-  const order = orders.find((item) => item.id === req.params.id);
-
-  if (!order) {
-    return res.status(404).json({ message: "Pedido no encontrado" });
-  }
-
-  try {
-    const result = await sendOrderEmails(order);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ message: "No se pudo reenviar el email" });
-  }
-});
-
-app.post("/api/orders", async (req, res) => {
-  const form = req.body || {};
-
-  if (
-    !form.fullName?.trim() ||
-    !form.email?.trim() ||
-    !form.address?.trim() ||
-    !form.city?.trim() ||
-    !form.postalCode?.trim() ||
-    !Array.isArray(form.items) ||
-    !form.items.length
-  ) {
-    return res.status(400).json({ message: "Datos de pedido incompletos" });
-  }
-
-  const normalizedItems = [];
-
-  for (const item of form.items) {
-    const productId = Number(item.productId);
-    const qty = Number(item.qty);
-    const size = String(item.size || "").trim();
-    const product = productCatalogById.get(productId);
-
-    if (!product) {
-      return res.status(400).json({ message: "Producto no v?lido" });
-    }
-
-    if (!allowedSizes.includes(size)) {
-      return res.status(400).json({ message: "Talla no v?lida" });
-    }
-
-    if (!Number.isInteger(qty) || qty <= 0) {
-      return res.status(400).json({ message: "Cantidad no v?lida" });
-    }
-
-    normalizedItems.push({
-      productId: product.id,
-      nombre: product.name,
-      talla: size,
-      cantidad: qty,
-      precio: product.price,
-    });
-  }
-
-  const total = normalizedItems.reduce(
-    (sum, item) => sum + Number(item.precio) * Number(item.cantidad),
-    0,
-  );
-
-  const order = {
-    id: `TTU-${Date.now()}-${crypto.randomUUID().slice(0, 6)}`,
-    fecha: new Date().toLocaleDateString("es-ES"),
-    cliente: {
-      nombre: form.fullName,
-      email: form.email,
-      telefono: form.phone || "",
-    },
-    envio: {
-      direccion: form.address,
-      ciudad: form.city,
-      cp: form.postalCode,
-    },
-    productos: normalizedItems,
-    total,
-    estado: "Pendiente",
-    notas: form.notes || "",
-  };
-
-  const orders = readOrders();
-  orders.unshift(order);
-  writeOrders(orders);
-
-  try {
-    const emailResult = await sendOrderEmails(order);
-    res.status(201).json({ order, emailResult });
-  } catch (error) {
-    res.status(201).json({
-      order,
-      emailResult: { sent: false, reason: "smtp_error" },
-    });
-  }
-});
-
-if (fs.existsSync(adminDir)) {
-  app.use(
-    "/admin-static",
-    requireAdmin,
-    express.static(adminDir, { index: false }),
-  );
-
-  app.get("/", requireAdmin, (req, res) => {
-    res.sendFile(path.join(adminDir, "index.html"));
+  app.get("/api/admin/orders", requireAdmin, (req, res) => {
+    res.json(readOrders());
   });
+
+  app.patch("/api/admin/orders/:id", requireAdmin, (req, res) => {
+    const { status } = req.body || {};
+    const orders = readOrders();
+    const nextOrders = orders.map((order) =>
+      order.id === req.params.id ? { ...order, estado: status } : order,
+    );
+    writeOrders(nextOrders);
+    res.json(nextOrders.find((order) => order.id === req.params.id));
+  });
+
+  app.delete("/api/admin/orders/:id", requireAdmin, (req, res) => {
+    const orders = readOrders();
+    const nextOrders = orders.filter((order) => order.id !== req.params.id);
+    writeOrders(nextOrders);
+    res.status(204).end();
+  });
+
+  app.post("/api/admin/orders/:id/resend-email", requireAdmin, async (req, res) => {
+    const orders = readOrders();
+    const order = orders.find((item) => item.id === req.params.id);
+
+    if (!order) {
+      return res.status(404).json({ message: "Pedido no encontrado" });
+    }
+
+    try {
+      const result = await sendOrderEmails(order);
+      res.json(result);
+    } catch {
+      res.status(500).json({ message: "No se pudo reenviar el email" });
+    }
+  });
+
+  app.post("/api/orders", async (req, res) => {
+    const form = req.body || {};
+
+    if (
+      !form.fullName?.trim() ||
+      !form.email?.trim() ||
+      !form.address?.trim() ||
+      !form.city?.trim() ||
+      !form.postalCode?.trim() ||
+      !Array.isArray(form.items) ||
+      !form.items.length
+    ) {
+      return res.status(400).json({ message: "Datos de pedido incompletos" });
+    }
+
+    const normalizedItems = [];
+
+    for (const item of form.items) {
+      const productId = Number(item.productId);
+      const qty = Number(item.qty);
+      const size = String(item.size || "").trim();
+      const product = productCatalogById.get(productId);
+
+      if (!product) {
+        return res.status(400).json({ message: "Producto no válido" });
+      }
+
+      if (!allowedSizes.includes(size)) {
+        return res.status(400).json({ message: "Talla no válida" });
+      }
+
+      if (!Number.isInteger(qty) || qty <= 0) {
+        return res.status(400).json({ message: "Cantidad no válida" });
+      }
+
+      normalizedItems.push({
+        productId: product.id,
+        nombre: product.name,
+        talla: size,
+        cantidad: qty,
+        precio: product.price,
+      });
+    }
+
+    const total = normalizedItems.reduce(
+      (sum, item) => sum + Number(item.precio) * Number(item.cantidad),
+      0,
+    );
+
+    const order = {
+      id: `TTU-${Date.now()}-${crypto.randomUUID().slice(0, 6)}`,
+      fecha: new Date().toLocaleDateString("es-ES"),
+      cliente: {
+        nombre: form.fullName,
+        email: form.email,
+        telefono: form.phone || "",
+      },
+      envio: {
+        direccion: form.address,
+        ciudad: form.city,
+        cp: form.postalCode,
+      },
+      productos: normalizedItems,
+      total,
+      estado: "Pendiente",
+      notas: form.notes || "",
+    };
+
+    const orders = readOrders();
+    orders.unshift(order);
+    writeOrders(orders);
+
+    try {
+      const emailResult = await sendOrderEmails(order);
+      res.status(201).json({ order, emailResult });
+    } catch {
+      res.status(201).json({
+        order,
+        emailResult: { sent: false, reason: "smtp_error" },
+      });
+    }
+  });
+
+  app.get("/api", (req, res) => {
+    res.json({
+      ok: true,
+      routes: [
+        "POST /api/orders",
+        "GET /api/admin/orders",
+        "PATCH /api/admin/orders/:id",
+        "DELETE /api/admin/orders/:id",
+        "POST /api/admin/orders/:id/resend-email",
+      ],
+    });
+  });
+
+  if (fs.existsSync(adminDir)) {
+    app.use(
+      "/admin-static",
+      requireAdmin,
+      express.static(adminDir, { index: false }),
+    );
+
+    app.get("/admin", requireAdmin, (req, res) => {
+      res.sendFile(path.join(adminDir, "index.html"));
+    });
+  }
+
+  if (isProduction) {
+    if (fs.existsSync(distDir)) {
+      app.use(express.static(distDir));
+      app.get("/{*path}", (req, res, next) => {
+        if (req.path.startsWith("/api") || req.path.startsWith("/admin")) {
+          return next();
+        }
+        res.sendFile(path.join(distDir, "index.html"));
+      });
+    }
+  } else {
+    const { createServer } = await import("vite");
+    const vite = await createServer({
+      server: {
+        middlewareMode: true,
+        hmr: {
+          server: httpServer,
+        },
+      },
+      appType: "spa",
+    });
+
+    app.use(vite.middlewares);
+
+    app.get("/{*path}", async (req, res, next) => {
+      if (req.path.startsWith("/api") || req.path.startsWith("/admin")) {
+        return next();
+      }
+
+      try {
+        const indexPath = path.join(rootDir, "index.html");
+        let template = fs.readFileSync(indexPath, "utf8");
+        template = await vite.transformIndexHtml(req.originalUrl, template);
+        res.status(200).set({ "Content-Type": "text/html" }).end(template);
+      } catch (error) {
+        vite.ssrFixStacktrace(error);
+        next(error);
+      }
+    });
+  }
+
+  return { app, httpServer };
 }
 
-app.listen(PORT, () => {
+const { httpServer } = await createApp();
+
+httpServer.on("error", (error) => {
+  if (error.code === "EADDRINUSE") {
+    console.error(
+      `El puerto ${PORT} ya está en uso. Cierra el proceso anterior o cambia PORT en tu .env.`,
+    );
+    process.exit(1);
+  }
+
+  throw error;
+});
+
+httpServer.listen(PORT, () => {
   console.log(`Server listening on http://localhost:${PORT}`);
 });

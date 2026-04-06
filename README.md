@@ -1,19 +1,19 @@
 # ToTusTuus Web
 
-Tienda web de ToTusTuus construida con React + Vite y un backend en Express para gestionar pedidos, correos autom?ticos y una p?gina independiente de administraci?n.
+Tienda web de ToTusTuus construida con React + Vite y un backend en Express para gestionar pedidos, correos automáticos y una página independiente de administración, todo en el mismo puerto.
 
-## Descripci?n
+## Descripción
 
-Este proyecto reproduce la web de la marca ToTusTuus con cat?logo, fichas de producto, carrito, checkout y una capa backend para que los pedidos no dependan de l?gica sensible en frontend.
+Este proyecto reproduce la web de la marca ToTusTuus con catálogo, fichas de producto, carrito y checkout, mientras que Express centraliza la API y sirve tanto la tienda como el panel de gestión.
 
 ## Funcionalidades
 
-- Cat?logo y fichas de producto
+- Catálogo y fichas de producto
 - Carrito de compra
-- Checkout con creaci?n real de pedidos en backend
-- P?gina de gesti?n de pedidos independiente del frontend de tienda
-- Env?o de email al administrador y al cliente
-- Assets locales, sin dependencia de im?genes remotas de Shopify
+- Checkout con creación real de pedidos en backend
+- Página de gestión de pedidos protegida en `/admin`
+- Envío de email al administrador y al cliente
+- Assets locales, sin dependencia de imágenes remotas de Shopify
 
 ## Stack
 
@@ -33,14 +33,14 @@ npm install
 
 ### 2. Configurar variables de entorno
 
-Crea un archivo `.env` en la ra?z tomando como base `.env.example`.
+Crea un archivo `.env` en la raíz tomando como base `.env.example`.
 
 Variables necesarias:
 
 ```env
 PORT=8787
-CLIENT_ORIGIN=http://localhost:5173
-VITE_API_BASE=http://localhost:8787/api
+CLIENT_ORIGIN=http://localhost:8787
+VITE_API_BASE=/api
 
 ADMIN_EMAIL=pedidos@totustuus.com
 ADMIN_BASIC_USER=admin
@@ -59,43 +59,39 @@ SMTP_FROM=ToTusTuus <pedidos@totustuus.com>
 ```bash
 npm run dev
 npm run build
-npm run preview
 npm run start
 ```
 
 ### Desarrollo
 
-`npm run dev` levanta:
+`npm run dev` levanta un único servidor en:
 
-- Frontend Vite en `http://localhost:5173`
-- Backend Express en `http://localhost:8787`
-- La tienda usa `VITE_API_BASE` para apuntar a la API; en desarrollo puede ir a `http://localhost:8787/api`
+- Tienda: `http://localhost:8787/`
+- Panel admin: `http://localhost:8787/admin`
+- API: `http://localhost:8787/api`
 
-## Panel de administraci?n
+## Producción
 
-La gesti?n de pedidos ya no forma parte del frontend p?blico.
-
-El backend sirve directamente su propia p?gina de administraci?n en:
-
-```txt
-http://localhost:8787/
+```bash
+npm run build
+npm run start
 ```
 
-El acceso est? protegido por `Basic Auth` del servidor usando `ADMIN_BASIC_USER` y `ADMIN_BASIC_PASS`.
+En producción, Express sirve el frontend compilado desde `dist` y mantiene el panel admin en `/admin`.
 
 ## Estructura
 
 ```txt
-src/               frontend React
-public/            im?genes y assets est?ticos
-server/            API Express, panel admin independiente y almacenamiento de pedidos
-server/admin/      interfaz propia de gesti?n de pedidos
+src/               frontend React de la tienda
+public/            imágenes y assets estáticos
+server/            API Express, panel admin y arranque unificado
+server/admin/      interfaz propia de gestión de pedidos
 server/data/       datos persistidos localmente en desarrollo
-shared/            cat?logo compartido para validaci?n de pedidos
+shared/            catálogo compartido para validación de pedidos
 ```
 
 ## Notas
 
 - `server/data/orders.json` no se versiona para no subir pedidos reales.
 - `dist/` y `node_modules/` tampoco se versionan.
-- Para que el env?o de emails funcione de verdad necesitas un SMTP real configurado.
+- Para que el envío de emails funcione de verdad necesitas un SMTP real configurado.

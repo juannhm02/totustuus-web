@@ -2,11 +2,10 @@
   "name": "totustuus-web",
   "private": true,
   "version": "1.0.0",
-  "description": "Tienda web de ToTusTuus con frontend en React/Vite y backend Express para pedidos, gesti?n independiente y correos transaccionales.",
+  "description": "Tienda web de ToTusTuus con frontend en React/Vite y backend Express para pedidos, gestión independiente y correos transaccionales.",
   "type": "module",
   "scripts": {
-    "dev": "concurrently -k \"npm:dev:server\" \"npm:dev:client\"",
-    "dev:client": "vite",
+    "dev": "node server/index.js",
     "dev:server": "node server/index.js",
     "build": "vite build",
     "preview": "vite preview",
@@ -23,7 +22,6 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.7.0",
-    "concurrently": "^9.2.1",
     "vite": "^5.4.10"
   }
 }
