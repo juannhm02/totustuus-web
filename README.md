@@ -93,20 +93,4 @@ server/data/       datos persistidos localmente en desarrollo
 
 - `server/data/orders.json` no se versiona para no subir pedidos reales.
 - `dist/` y `node_modules/` tampoco se versionan.
-- Para que el envío de emails funcione de verdad necesitas un SMTP real configurado.
-
-## GitHub
-
-Repositorio preparado para subirse a GitHub con historial desde Git.
-
-Propuesta de nombre de repositorio:
-
-```txt
-totustuus-web
-```
-
-Propuesta de descripción:
-
-```txt
-Tienda web de ToTusTuus con React, Vite y backend Express para pedidos y administración.
-```
+- Para que el envío de emails funcione de verdad necesitas un SMTP real configurado
