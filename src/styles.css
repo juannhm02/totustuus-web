@@ -182,6 +182,7 @@ footer{background:#0f1f0f;border-top:1px solid var(--border);padding:4.5rem 2rem
 .sza{display:flex;gap:8px}
 .bcan{flex:1;padding:12px;background:transparent;border:1px solid var(--border);color:var(--cream);font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
 .bcon{flex:2;padding:12px;background:var(--cream);border:none;color:var(--gd);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+.bcan:disabled,.bcon:disabled{opacity:.55;cursor:wait}
 .cob{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:400;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s;padding:1rem}
 .cob.on{opacity:1;pointer-events:all}
 .cobx{background:var(--gm);width:100%;max-width:510px;padding:2.2rem;border:1px solid var(--border);max-height:90vh;overflow-y:auto}

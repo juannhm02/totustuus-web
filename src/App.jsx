@@ -1048,7 +1048,14 @@ function SizeModal({
   );
 }
 
-function CheckoutModal({ isOpen, cart, total, onClose, onPlaceOrder }) {
+function CheckoutModal({
+  isOpen,
+  cart,
+  total,
+  onClose,
+  onPlaceOrder,
+  isSubmitting,
+}) {
   const [form, setForm] = useState({
     fullName: "",
     email: "",
@@ -1080,7 +1087,9 @@ function CheckoutModal({ isOpen, cart, total, onClose, onPlaceOrder }) {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    onPlaceOrder(form);
+    if (!isSubmitting) {
+      onPlaceOrder(form);
+    }
   };
 
   return (
@@ -1182,11 +1191,16 @@ function CheckoutModal({ isOpen, cart, total, onClose, onPlaceOrder }) {
             />
           </div>
           <div className="checkout-actions">
-            <button className="bcan" type="button" onClick={onClose}>
+            <button
+              className="bcan"
+              type="button"
+              onClick={onClose}
+              disabled={isSubmitting}
+            >
               Volver
             </button>
-            <button className="bcon" type="submit">
-              Confirmar pedido
+            <button className="bcon" type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Confirmando..." : "Confirmar pedido"}
             </button>
           </div>
         </form>
@@ -1207,6 +1221,7 @@ export default function App() {
   const [toastMessage, setToastMessage] = useState("");
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
   const [quickAddProduct, setQuickAddProduct] = useState(null);
   const [quickAddSize, setQuickAddSize] = useState("");
 
@@ -1302,6 +1317,10 @@ export default function App() {
   };
 
   const placeOrder = async (form) => {
+    if (isSubmittingOrder) {
+      return false;
+    }
+
     if (
       !form.fullName.trim() ||
       !form.email.trim() ||
@@ -1319,6 +1338,7 @@ export default function App() {
     }
 
     try {
+      setIsSubmittingOrder(true);
       const response = await createOrderRequest({
         ...form,
         items: cart.map((item) => ({
@@ -1330,19 +1350,16 @@ export default function App() {
 
       setCart([]);
       setIsCheckoutOpen(false);
-
-      if (response?.emailResult?.sent) {
-        showToast("Pedido realizado. Hemos enviado la confirmación por email.");
-      } else {
-        showToast(
-          "Pedido realizado. Lo hemos registrado, pero el email automático no está configurado todavía.",
-        );
-      }
+      showToast(
+        `Pedido ${response?.order?.id || "registrado"} confirmado. Te enviaremos la confirmación por email en unos segundos.`,
+      );
 
       return true;
     } catch (orderError) {
       showToast(orderError.message || "No se pudo finalizar el pedido");
       return false;
+    } finally {
+      setIsSubmittingOrder(false);
     }
   };
 
@@ -1414,6 +1431,7 @@ export default function App() {
         total={cartTotal}
         onClose={() => setIsCheckoutOpen(false)}
         onPlaceOrder={placeOrder}
+        isSubmitting={isSubmittingOrder}
       />
       <Toast message={toastMessage} />
     </div>
