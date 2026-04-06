@@ -31,28 +31,107 @@ Este proyecto reproduce la web de la marca ToTusTuus con catálogo, fichas de pr
 npm install
 ```
 
-### 2. Configurar variables de entorno
+### 2. Crear el `.env`
 
 Crea un archivo `.env` en la raíz tomando como base `.env.example`.
 
-Variables necesarias:
+Ejemplo:
 
 ```env
 PORT=8787
 CLIENT_ORIGIN=http://localhost:8787
 VITE_API_BASE=/api
 
-ADMIN_EMAIL=pedidos@totustuus.com
-ADMIN_BASIC_USER=admin
-ADMIN_BASIC_PASS=cambia-esta-clave
+ADMIN_EMAIL=tu-correo@dominio.com
+ADMIN_BASIC_USER=totustuus-admin
+ADMIN_BASIC_PASS=cambia-esta-clave-larga-y-segura
 
-SMTP_HOST=smtp.tu-proveedor.com
+SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_SECURE=false
-SMTP_USER=usuario-smtp
-SMTP_PASS=clave-smtp
-SMTP_FROM=ToTusTuus <pedidos@totustuus.com>
+SMTP_USER=tu-correo@gmail.com
+SMTP_PASS=tu-contrasena-de-aplicacion
+SMTP_FROM=ToTusTuus <tu-correo@gmail.com>
 ```
+
+## Qué significa cada variable
+
+- `PORT`: puerto único donde se sirve la tienda, el panel y la API.
+- `CLIENT_ORIGIN`: origen público de la app.
+- `VITE_API_BASE`: base de la API para el frontend. En este proyecto debe ser `/api`.
+- `ADMIN_EMAIL`: correo del administrador que recibirá los pedidos.
+- `ADMIN_BASIC_USER`: usuario del acceso al panel `/admin`.
+- `ADMIN_BASIC_PASS`: contraseña del acceso al panel `/admin`.
+- `SMTP_HOST`: servidor SMTP del proveedor de correo.
+- `SMTP_PORT`: puerto SMTP.
+- `SMTP_SECURE`: `true` si usas SSL directo, `false` si usas STARTTLS.
+- `SMTP_USER`: usuario SMTP.
+- `SMTP_PASS`: contraseña SMTP o contraseña de aplicación.
+- `SMTP_FROM`: remitente visible en los correos.
+
+## Correos: cómo hacer que funcionen bien
+
+Cuando se crea un pedido, el backend envía:
+
+- un email al administrador en `ADMIN_EMAIL`
+- un email de confirmación al cliente con el correo que haya puesto en el checkout
+
+### Opción recomendada para empezar: Gmail
+
+Usa esta configuración:
+
+```env
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=tu-correo@gmail.com
+SMTP_PASS=tu-contrasena-de-aplicacion
+SMTP_FROM=ToTusTuus <tu-correo@gmail.com>
+```
+
+Importante:
+
+- No uses tu contraseña normal de Gmail.
+- Usa una contraseña de aplicación de Google.
+- Para eso necesitas tener activada la verificación en dos pasos en tu cuenta.
+
+### Si usas otro proveedor
+
+Solo cambia:
+
+- `SMTP_HOST`
+- `SMTP_PORT`
+- `SMTP_SECURE`
+- `SMTP_USER`
+- `SMTP_PASS`
+- `SMTP_FROM`
+
+## Cómo probar que llegan los dos correos
+
+1. Arranca la app con:
+
+```bash
+npm run dev
+```
+
+2. Abre la tienda en:
+
+```txt
+http://localhost:8787/
+```
+
+3. Haz un pedido de prueba con un correo tuyo en el checkout.
+
+4. Comprueba:
+
+- que el administrador recibe el email en `ADMIN_EMAIL`
+- que el cliente recibe la confirmación en el email que haya introducido
+
+5. Si no llegan:
+
+- revisa spam
+- revisa que `SMTP_USER` y `SMTP_PASS` sean correctos
+- revisa que `SMTP_FROM` use un remitente permitido por tu proveedor
 
 ## Scripts
 
