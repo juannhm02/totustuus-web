@@ -4,6 +4,9 @@
   "version": "1.0.0",
   "description": "Tienda web de ToTusTuus con frontend en React/Vite y backend Express para pedidos, gestión independiente y correos transaccionales.",
   "type": "module",
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
     "dev": "node server/index.js",
     "dev:server": "node server/index.js",
