@@ -1,7 +1,6 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
 import path from "path";
 import fs from "fs";
@@ -17,9 +16,9 @@ const ordersFile = path.join(dataDir, "orders.json");
 
 const PORT = Number(process.env.PORT || 8787);
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || "http://localhost:5173";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "cambia-esta-clave";
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "pedidos@totustuus.com";
-const JWT_SECRET = process.env.ADMIN_JWT_SECRET || "cambia-este-jwt-secret";
+const ADMIN_BASIC_USER = process.env.ADMIN_BASIC_USER || "admin";
+const ADMIN_BASIC_PASS = process.env.ADMIN_BASIC_PASS || "cambia-esta-clave";
 const SMTP_HOST = process.env.SMTP_HOST;
 const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
 const SMTP_SECURE = process.env.SMTP_SECURE === "true";
@@ -120,30 +119,25 @@ async function sendOrderEmails(order) {
 
 function requireAdmin(req, res, next) {
   const auth = req.headers.authorization || "";
-  const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  const [scheme, encoded] = auth.split(" ");
 
-  if (!token) {
-    return res.status(401).json({ message: "No autorizado" });
+  if (scheme !== "Basic" || !encoded) {
+    res.setHeader("WWW-Authenticate", 'Basic realm="ToTusTuus Admin"');
+    return res.status(401).json({ message: "Autenticaci?n requerida" });
   }
 
-  try {
-    req.admin = jwt.verify(token, JWT_SECRET);
-    next();
-  } catch {
-    return res.status(401).json({ message: "Sesión inválida" });
+  const decoded = Buffer.from(encoded, "base64").toString("utf8");
+  const separatorIndex = decoded.indexOf(":");
+  const username = separatorIndex >= 0 ? decoded.slice(0, separatorIndex) : "";
+  const password = separatorIndex >= 0 ? decoded.slice(separatorIndex + 1) : "";
+
+  if (username !== ADMIN_BASIC_USER || password !== ADMIN_BASIC_PASS) {
+    res.setHeader("WWW-Authenticate", 'Basic realm="ToTusTuus Admin"');
+    return res.status(401).json({ message: "Credenciales incorrectas" });
   }
+
+  next();
 }
-
-app.post("/api/admin/login", (req, res) => {
-  const { password } = req.body || {};
-
-  if (password !== ADMIN_PASSWORD) {
-    return res.status(401).json({ message: "Contraseña incorrecta" });
-  }
-
-  const token = jwt.sign({ role: "admin" }, JWT_SECRET, { expiresIn: "12h" });
-  res.json({ token });
-});
 
 app.get("/api/admin/orders", requireAdmin, (req, res) => {
   res.json(readOrders());
@@ -243,6 +237,9 @@ app.post("/api/orders", async (req, res) => {
 
 if (fs.existsSync(distDir)) {
   app.use(express.static(distDir));
+  app.get("/admin-pedidos", requireAdmin, (req, res) => {
+    res.sendFile(path.join(distDir, "index.html"));
+  });
   app.get("/{*path}", (req, res) => {
     if (req.path.startsWith("/api/")) {
       return res.status(404).end();

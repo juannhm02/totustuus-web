@@ -127,7 +127,6 @@ const sizes = ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL"];
 const categoryOptions = ["all", "Sudadera", "Camiseta", "Polar"];
 const storageKeys = {
   cart: "ttu_react_cart",
-  adminSession: "ttu_admin_session",
 };
 const apiBase = "/api";
 const aboutValues = [
@@ -165,22 +164,6 @@ function formatPrice(price) {
   return `\u20AC${price.toFixed(2).replace(".", ",")} EUR`;
 }
 
-function getAdminToken() {
-  return sessionStorage.getItem(storageKeys.adminSession) || "";
-}
-
-function setAdminToken(token) {
-  sessionStorage.setItem(storageKeys.adminSession, token);
-}
-
-function clearAdminToken() {
-  sessionStorage.removeItem(storageKeys.adminSession);
-}
-
-function hasAdminSession() {
-  return Boolean(getAdminToken());
-}
-
 async function apiRequest(path, options = {}) {
   const response = await fetch(`${apiBase}${path}`, {
     headers: {
@@ -209,27 +192,13 @@ async function createOrderRequest(payload) {
   });
 }
 
-async function adminLoginRequest(password) {
-  return apiRequest("/admin/login", {
-    method: "POST",
-    body: JSON.stringify({ password }),
-  });
-}
-
 async function fetchAdminOrders() {
-  return apiRequest("/admin/orders", {
-    headers: {
-      Authorization: `Bearer ${getAdminToken()}`,
-    },
-  });
+  return apiRequest("/admin/orders");
 }
 
 async function updateAdminOrderStatus(id, status) {
   return apiRequest(`/admin/orders/${id}`, {
     method: "PATCH",
-    headers: {
-      Authorization: `Bearer ${getAdminToken()}`,
-    },
     body: JSON.stringify({ status }),
   });
 }
@@ -237,18 +206,12 @@ async function updateAdminOrderStatus(id, status) {
 async function deleteAdminOrder(id) {
   return apiRequest(`/admin/orders/${id}`, {
     method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${getAdminToken()}`,
-    },
   });
 }
 
 async function resendAdminOrderEmail(id) {
   return apiRequest(`/admin/orders/${id}/resend-email`, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${getAdminToken()}`,
-    },
   });
 }
 
@@ -1070,66 +1033,30 @@ function ContactPage({ onSubmit }) {
 
 function AdminOrdersPage() {
   const [orders, setOrders] = useState([]);
-  const [isAuthorized, setIsAuthorized] = useState(() => hasAdminSession());
-  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [isBusy, setIsBusy] = useState(false);
-
-  const loadOrders = async () => {
-    setIsLoading(true);
-    setError("");
-
-    try {
-      const nextOrders = await fetchAdminOrders();
-      setOrders(nextOrders);
-    } catch (fetchError) {
-      clearAdminToken();
-      setIsAuthorized(false);
-      setOrders([]);
-      setError(fetchError.message || "No se pudieron cargar los pedidos");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (isAuthorized) {
-      loadOrders();
-    }
-  }, [isAuthorized]);
+    const loadOrders = async () => {
+      setIsLoading(true);
+      setError("");
 
-  const handleLogin = async (event) => {
-    event.preventDefault();
+      try {
+        const nextOrders = await fetchAdminOrders();
+        setOrders(nextOrders);
+      } catch (fetchError) {
+        setError(
+          fetchError.message ||
+            "No se pudieron cargar los pedidos. El acceso lo protege el servidor.",
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    if (!password.trim()) {
-      setError("Introduce la contrase?a");
-      return;
-    }
-
-    setIsBusy(true);
-    setError("");
-    setNotice("");
-
-    try {
-      const data = await adminLoginRequest(password);
-      setAdminToken(data.token);
-      setIsAuthorized(true);
-      setPassword("");
-    } catch (loginError) {
-      setError(loginError.message || "Contrase?a incorrecta");
-    } finally {
-      setIsBusy(false);
-    }
-  };
-
-  const handleLogout = () => {
-    clearAdminToken();
-    setIsAuthorized(false);
-    setOrders([]);
-    setNotice("");
-  };
+    loadOrders();
+  }, []);
 
   const updateStatus = async (id, status) => {
     try {
@@ -1171,38 +1098,6 @@ function AdminOrdersPage() {
     }
   };
 
-  if (!isAuthorized) {
-    return (
-      <>
-        <div className="pbanner">
-          <h1>Acceso administraci?n</h1>
-        </div>
-        <div className="admin-wrap">
-          <div className="admin-login">
-            <h2>Panel de pedidos</h2>
-            <p>Introduce la contrase?a de administrador para acceder.</p>
-            <form onSubmit={handleLogin}>
-              <div className="fg2">
-                <label>Contrase?a</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  placeholder="Contrase?a de administraci?n"
-                />
-              </div>
-              {!!error && <p className="admin-error">{error}</p>}
-              <button className="bprim" type="submit">
-                {isBusy ? "Entrando..." : "Entrar"}
-              </button>
-            </form>
-          </div>
-        </div>
-        <SiteFooter />
-      </>
-    );
-  }
-
   return (
     <>
       <div className="pbanner">
@@ -1219,7 +1114,7 @@ function AdminOrdersPage() {
           </div>
         )}
 
-        {!isLoading && !orders.length && (
+        {!isLoading && !orders.length && !error && (
           <div className="admin-empty">
             <h2>No hay pedidos guardados</h2>
             <p>
@@ -1237,9 +1132,6 @@ function AdminOrdersPage() {
                   <h2>{order.id}</h2>
                 </div>
                 <div className="admin-actions">
-                  <button className="bcan" type="button" onClick={handleLogout}>
-                    Salir
-                  </button>
                   <select
                     value={order.estado}
                     onChange={(event) =>
