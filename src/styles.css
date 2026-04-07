@@ -230,6 +230,13 @@ footer{background:#0f1f0f;border-top:1px solid var(--border);padding:4.5rem 2rem
 .about-subscribe-form{display:flex;align-items:end;gap:1rem}
 .about-subscribe-form .fg2{flex:1;margin-bottom:0}
 .about-subscribe-form .bprim{min-width:190px}
+.legal-page{max-width:860px;margin:0 auto;padding:4rem 2rem 5rem}
+.legal-section{padding:0 0 2rem;border-bottom:1px solid var(--border);margin-bottom:2rem}
+.legal-section:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.legal-section h2{font-family:var(--s);font-size:1.5rem;font-weight:400;color:var(--white);margin-bottom:.9rem}
+.legal-section p{color:rgba(240,234,216,.76);font-size:14px;line-height:1.9;margin-bottom:.9rem}
+.legal-section p:last-child{margin-bottom:0}
+.legal-section a{color:var(--cream);text-decoration:underline}
 @media(max-width:900px){
   .hero-grid{grid-template-columns:1fr;gap:2.5rem;padding:4rem 2rem 3rem}
   .hcol-left,.hcol-right{padding-top:0}
@@ -244,6 +251,7 @@ footer{background:#0f1f0f;border-top:1px solid var(--border);padding:4.5rem 2rem
   .fg{grid-template-columns:1fr 1fr}
   .about-split,.about-split-reverse,.about-values-grid,.about-identity-grid{grid-template-columns:1fr}
   .about-subscribe-form{flex-direction:column;align-items:stretch}
+  .legal-page{padding:3rem 2rem 4rem}
   .drw{width:100%}
   .pp-grid{grid-template-columns:1fr}
   .cobx{padding:1.5rem}
@@ -259,6 +267,7 @@ footer{background:#0f1f0f;border-top:1px solid var(--border);padding:4.5rem 2rem
   .feat{padding:1rem 1rem 0;gap:2rem}
   .hov{padding-top:.9rem}
   .about-page{padding:0 1rem 4rem}
+  .legal-page{padding:3rem 1rem 4rem}
   .about-split,.about-values,.about-identity,.about-subscribe{padding:3rem 0}
   .about-block h3,.about-value-card h3{font-size:1.55rem}
   .about-identity-card p{font-size:1.2rem}

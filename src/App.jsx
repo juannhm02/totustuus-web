@@ -286,10 +286,10 @@ function SiteFooter() {
           </div>
         </div>
         <div className="fb2">
-          <p className="fcp">© 2026 ToTusTuus, Tecnología de Shopify</p>
-          <a className="flegal" href="#">
+          <p className="fcp">© 2026 ToTusTuus. Todos los derechos reservados.</p>
+          <Link className="flegal" to="/terminos-y-politicas">
             Términos y políticas
-          </a>
+          </Link>
           <div className="soc">
             <a
               href="https://www.instagram.com/totustuus.brand/"
@@ -940,6 +940,109 @@ function ContactPage({ onSubmit }) {
   );
 }
 
+function LegalPage() {
+  return (
+    <>
+      <div className="pbanner">
+        <h1>Términos y políticas</h1>
+      </div>
+      <div className="legal-page">
+        <section className="legal-section">
+          <h2>Información general</h2>
+          <p>
+            Esta web corresponde a <strong>ToTusTuus</strong>, tienda online de
+            ropa y accesorios de inspiración cristiana. Si necesitas contactar
+            con nosotros, puedes hacerlo a través de la página de contacto o por
+            los canales oficiales de la marca.
+          </p>
+        </section>
+
+        <section className="legal-section">
+          <h2>Pedidos</h2>
+          <p>
+            Al realizar un pedido, el cliente declara que los datos facilitados
+            son veraces y completos. Una vez confirmado el pedido, recibirás un
+            correo de confirmación con el resumen de la compra.
+          </p>
+          <p>
+            ToTusTuus se reserva el derecho de rechazar o cancelar pedidos en
+            caso de error manifiesto en el precio, falta de stock, incidencia
+            técnica o sospecha de uso fraudulento de la web.
+          </p>
+        </section>
+
+        <section className="legal-section">
+          <h2>Precios y pagos</h2>
+          <p>
+            Todos los precios mostrados en la web se expresan en euros. Los
+            importes aplicables serán los que aparezcan en el momento de
+            confirmar el pedido, salvo error tipográfico o técnico evidente.
+          </p>
+        </section>
+
+        <section className="legal-section">
+          <h2>Envíos</h2>
+          <p>
+            Los pedidos se preparan y gestionan con los datos facilitados por el
+            cliente. Es responsabilidad del comprador introducir correctamente
+            la dirección de envío, ciudad, código postal y datos de contacto.
+          </p>
+          <p>
+            Los plazos de preparación y entrega pueden variar según la carga de
+            trabajo, disponibilidad de producto y destino del pedido.
+          </p>
+        </section>
+
+        <section className="legal-section">
+          <h2>Cambios y devoluciones</h2>
+          <p>
+            Si tu pedido llega con un defecto, incidencia o error, ponte en
+            contacto con nosotros lo antes posible para revisarlo. Cada caso se
+            valorará individualmente para ofrecer una solución adecuada.
+          </p>
+          <p>
+            Para cualquier solicitud relacionada con cambios o devoluciones,
+            escríbenos indicando el número de pedido y el motivo de la consulta.
+          </p>
+        </section>
+
+        <section className="legal-section">
+          <h2>Privacidad</h2>
+          <p>
+            Los datos personales facilitados durante el proceso de compra o
+            contacto se utilizan exclusivamente para gestionar pedidos, resolver
+            consultas y prestar atención al cliente.
+          </p>
+          <p>
+            No utilizamos tus datos para fines ajenos a la actividad de la
+            tienda. Puedes solicitar información, rectificación o eliminación de
+            tus datos escribiéndonos por los canales oficiales de contacto.
+          </p>
+        </section>
+
+        <section className="legal-section">
+          <h2>Uso de la web</h2>
+          <p>
+            El usuario se compromete a utilizar esta web de forma lícita, sin
+            realizar actuaciones que puedan perjudicar a la marca, a otros
+            usuarios o al funcionamiento del sitio.
+          </p>
+        </section>
+
+        <section className="legal-section">
+          <h2>Contacto</h2>
+          <p>
+            Para cualquier duda relacionada con pedidos, privacidad o
+            incidencias, puedes escribirnos desde la sección{" "}
+            <Link to="/contacto">Contacto</Link>.
+          </p>
+        </section>
+      </div>
+      <SiteFooter />
+    </>
+  );
+}
+
 function CartDrawer({
   isOpen,
   cart,
@@ -1402,6 +1505,7 @@ export default function App() {
           path="/contacto"
           element={<ContactPage onSubmit={submitContact} />}
         />
+        <Route path="/terminos-y-politicas" element={<LegalPage />} />
       </Routes>
       <CartDrawer
         isOpen={isCartOpen}
